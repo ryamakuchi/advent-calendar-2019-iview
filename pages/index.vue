@@ -1,63 +1,146 @@
 <template>
   <div class="container">
-    <div>
-      <logo />
-      <h1 class="title">
-        advent-calendar-2019-iview
-      </h1>
-      <h2 class="subtitle">
-        Welcome to the iView + Nuxt.js template
-      </h2>
-      <div class="links">
-        <Button type="primary" target="_blank" to="https://nuxtjs.org/">
-          Documentation
-        </Button>
-        <Button target="_blank" to="https://github.com/nuxt/nuxt.js">
-          GitHub
-        </Button>
-        <Button target="_blank" to="https://www.iviewui.com/">
-          iView
-        </Button>
-      </div>
-    </div>
+    <h1>
+      Nuxt.js Advent Calendar 2019
+    </h1>
+
+    <p class="comment">{{ comment }}</p>
+
+    <Row>
+      <Col
+        v-for="dayName in dayNames"
+        :key="dayName"
+        class="day-name"
+      >
+        {{ dayName }}
+      </Col>
+    </Row>
+
+    <Row>
+      <Col
+        v-for="day in days"
+        :key="day.date"
+      >
+        <Card dis-hover>
+          <div slot="title"
+          >
+            <Tag color="magenta">{{ day.date }}</Tag>
+
+            <a
+              :href="`https://qiita.com/${day.authorName}`"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ellipsis"
+            >
+              {{ day.authorName }}
+            </a>
+
+            <Avatar
+              :src="day.authorImageUrl"
+              size="large"
+            />
+          </div>
+
+          <a v-if="day.articleUrl !== null"
+            :href="day.articleUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ day.comment }}
+          </a>
+
+          <p v-else>
+            {{ day.comment }}
+          </p>
+        </Card>
+      </Col>
+
+      <Col
+        v-for="day in [26, 27, 28]"
+        :key="day"
+      >
+        <Card dis-hover>
+          <Tag color="default">{{ day }}</Tag>
+        </Card>
+      </Col>
+    </Row>
+
+    <p class="comment">
+      ※ このページはレスポンシブ対応していません。デスクトップサイズの画面でご覧ください。
+    </p>
   </div>
 </template>
 
 <script>
-import Logo from '~/components/Logo.vue'
+import { parse } from 'node-html-parser'
+
 export default {
-  components: {
-    Logo
+  async asyncData({ $axios }) {
+    const { data } = await $axios.get('https://qiita.com/advent-calendar/2019/nuxt-js')
+    const root = parse(data)
+    return {
+      comment: root.querySelector('.markdownContent').text,
+      dayNames: root.querySelectorAll('.adventCalendarCalendar_dayName').map(dayName => dayName.text),
+      days: root.querySelectorAll('.adventCalendarCalendar_day').map(day => {
+        const articleUrl = day.querySelector('.adventCalendarCalendar_comment').querySelector('a') ?
+          day.querySelector('.adventCalendarCalendar_comment').querySelector('a').attributes['href'] :
+          null
+        return {
+          date: day.querySelector('.adventCalendarCalendar_date').text,
+          authorName: day.querySelector('.adventCalendarCalendar_author').text.replace(/\s|&nbsp;/g, ''),
+          authorImageUrl: day.querySelector('.adventCalendarCalendar_authorIcon').attributes['src'],
+          comment: day.querySelector('.adventCalendarCalendar_comment').text,
+          articleUrl: articleUrl
+        }
+      })
+    }
   }
 }
 </script>
 
 <style>
 .container {
-  margin: 0 auto;
-  min-height: 100vh;
+  padding: 20px 5%;
+}
+
+.comment {
+  margin: 20px 0;
+}
+
+.ivu-row {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
+  flex-wrap: wrap;
+  border: 1px solid #e9e9e9;
 }
-.title {
-  font-family: 'Quicksand', 'Source Sans Pro', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+.ivu-row > .ivu-col {
+  width: calc(100% / 7);
+  display: flex;
+}
+
+.day-name {
+  padding: 10px;
+  border-right: 1px solid #e9e9e9;
+}
+.day-name:last-child {
+  border-right: none;
+}
+
+.ivu-card {
+  border-radius: 0px;
+  width: 100%;
+}
+
+.ivu-avatar {
   display: block;
-  font-weight: 300;
-  font-size: 100px;
-  color: #35495e;
-  letter-spacing: 1px;
+  margin: 10px auto;
 }
-.subtitle {
-  font-weight: 300;
-  font-size: 42px;
-  color: #526488;
-  word-spacing: 5px;
-  padding-bottom: 15px;
-}
-.links {
-  padding-top: 15px;
+
+.ellipsis {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: middle;
+  white-space: nowrap;
+  width: 80px;
+  text-overflow: ellipsis;
 }
 </style>
